@@ -9,7 +9,7 @@ public class python1 {
 	{
 		PythonInterpreter interpreter = new PythonInterpreter();
 		interpreter.execfile("getdata1.py");
-		PyObject str = interpreter.eval("repr(getmeminfo('tv.airtel.visionsample'))");
+		PyObject str = interpreter.eval("repr(GetData().getmeminfo('tv.accedo.airtel.wynk.debug'))");
 		//	PyObject str1 = interpreter.eval("repr(getcpucores())");	
 		String n=str.toString().substring(1,str.toString().length()-1);
 		

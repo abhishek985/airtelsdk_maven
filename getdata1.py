@@ -1,93 +1,99 @@
-import re
+import re,sys, os
 import subprocess
-from subprocess import check_output, CalledProcessError
 import json
-import os
 
-cmp = "tv.airtel.visionsample/.activity.MainActivity"
-pname = "tv.airtel.visionsample"
-device_id = "emulator-5554"
 
-print "Just to check git Test"
-# Check IF Android Device is connected
-def check_device(args):
-    try:
-        adb_ouput = check_output(["adb", "devices"])
-        if args in adb_ouput:
-            return "Device is Connected"
+class GetData:
+
+    def split_lines(self, s):
+        """Splits lines in a way that works even on Windows and old devices.
+        Windows will see \r\n instead of \n, old devices do the same, old devices
+        on Windows will see \r\r\n.
+        """
+    # rstrip is used here to workaround a difference between splineslines and
+    # re.split:
+    # >>> 'foo\n'.splitlines()
+    # ['foo']
+    # >>> re.split(r'\n', 'foo\n')
+    # ['foo', '']
+        return re.split(r'[\r\n]+', s.rstrip())
+
+    def get_devices(self, adb_path='adb'):
+        with open(os.devnull, 'wb') as devnull:
+            subprocess.check_call([adb_path, 'start-server'], stdout=devnull,
+                                  stderr=devnull)
+        out = self.split_lines(
+            subprocess.check_output([adb_path, 'devices']).decode('utf-8'))
+        # The first line of `adb devices` just says "List of attached devices", so
+        # skip that.
+        devices = []
+        for line in out[1:]:
+            if not line.strip():
+                continue
+            if 'offline' in line:
+                continue
+            serial, _ = re.split(r'\s+', line, maxsplit=1)
+            devices.append(serial)
+        return devices
+
+    def getmeminfo(self, pname):
+        line_dict = {}
+        ls = subprocess.Popen(["adb", "shell", "dumpsys", "meminfo", pname, " | grep -E", "'Native Heap|TOTAL'"],
+                              stdout=subprocess.PIPE)
+        out = ls.stdout.readlines()
+        for line in out:
+            if re.search("Native Heap", line):
+                line = line.strip("\n")
+                line_array = line.split(" ")
+                line_array = " ".join(line_array).split()
+                line_dict["Native_Pss"] = int(line_array[2])
+                line_dict["Native_Heap_Alloc"] = int(line_array[-2])
+                line_dict["Native_Heap_Free"] = int(line_array[-1])
+
+                for line_sub in out:
+                    if re.search("TOTAL", line_sub):
+                        line_sub = line_sub.strip("\n")
+                        line_array = line_sub.split(" ")
+                        line_array = " ".join(line_array).split()
+                        line_dict["Total_Pss"] = int(line_array[1])
+                        line_dict["Total_Heap_Alloc"] = int(line_array[-2])
+                        line_dict["Total_Heap_Free"] = int(line_array[-1])
+                        break
+            break
+
+        if line_dict:
+            return json.dumps(line_dict)
+        return "App not started.Unable to fetch meminfo...."
+
+    def getcpuinfo(self, pname):
+        lm = subprocess.Popen(["adb", "shell", "dumpsys", "cpuinfo", "| grep -i", pname], stdout=subprocess.PIPE)
+        out = lm.stdout.readlines()
+        for line in out:
+            return line.strip("\n")
         else:
-            return "Device not Connected"
-    except CalledProcessError as e:
-        return e.returncode
+            return "App not started.Unable to fetch cpuinfo"
 
-
-def getmeminfo(pname):
-    line_dict = {}
-    ls = subprocess.Popen(["adb", "shell", "dumpsys", "meminfo", pname, " | grep -E", "'Native Heap|TOTAL'"],
-                          stdout=subprocess.PIPE)
-    out = ls.stdout.readlines()
-    for line in out:
-        if re.search("Native Heap", line):
-            line = line.strip("\n")
-            line_array = line.split(" ")
-            line_array = " ".join(line_array).split()
-            line_dict["Native_Pss"] = int(line_array[2])
-            line_dict["Native_Heap_Alloc"] = int(line_array[-2])
-            line_dict["Native_Heap_Free"] = int(line_array[-1])
-
-            for line_sub in out:
-                if re.search("TOTAL", line_sub):
-                    line_sub = line_sub.strip("\n")
-                    line_array = line_sub.split(" ")
-                    line_array = " ".join(line_array).split()
-                    line_dict["Total_Pss"] = int(line_array[1])
-                    line_dict["Total_Heap_Alloc"] = int(line_array[-2])
-                    line_dict["Total_Heap_Free"] = int(line_array[-1])
-                    break
-        break
-
-    if line_dict:
-        return json.dumps(line_dict)
-    return "App not started.Unable to fetch meminfo...."
-
-
-def getcpuinfo(pname):
-    lm = subprocess.Popen(["adb", "shell", "dumpsys", "cpuinfo", "| grep -i", pname], stdout=subprocess.PIPE)
-    out = lm.stdout.readlines()
-    for line in out:
-        return line.strip("\n")
-    else:
-        return "App not started.Unable to fetch cpuinfo"
-
-
-def getcpucores():
-    line_cpu = []
-    line_dict_cpu = {}
-
-    try:
-        cpu0 = os.popen('adb shell cat sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq')
-        cpu1 = os.popen('adb shell cat sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq')
-        cpu2 = os.popen('adb shell cat sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq')
-        cpu3 = os.popen('adb shell cat sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq')
-
+    def getcpucores(self):
+        line_dict_cpu = {}
         try:
-            line_cpu.append(int(cpu0.read().strip('\r\n')))
-            line_cpu.append(int(cpu1.read().strip('\r\n')))
-            line_cpu.append(int(cpu2.read().strip('\r\n')))
-            line_cpu.append(int(cpu3.read().strip('\r\n')))
-        except:
-            return "no devices/emulators found"
+            for i in range(1, 5):
+                lo = subprocess.Popen(["adb shell cat sys / devices / system / cpu / cpu" + str(i) +
+                                       " / cpufreq / scaling_cur_freq"],
+                                      stdout=subprocess.PIPE)
+                out = lo.stdout.readlines()
+                line_dict_cpu["CPU" + str(i)] = out
+        except OSError:
+            return "Unable to fetch CPU core details"
 
-        if line_cpu:
-            line_dict_cpu["CPU"] = line_cpu
-        else:
-            line_dict_cpu["CPU"] = 0
+        if line_dict_cpu:
+            return line_dict_cpu
+        return "App not started.Unable to fetch CPU Core"
 
-    except:
-        return "Unable to fetch CPU core details"
+    def getJenkyFrames(self):
+        jenky_frames_output = os.popen("adb shell dumpsys gfxinfo")
+        for count, line in enumerate(jenky_frames_output.readlines()):
+            if 'Janky frame' in line:
+                return line.split()[-2]
 
-    if line_dict_cpu:
-        return json.dumps(line_dict_cpu)
-    return "App not started.Unable to fetch CPU Core"
 
-print ("Test Complete")
+

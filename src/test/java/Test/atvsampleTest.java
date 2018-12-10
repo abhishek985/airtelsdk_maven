@@ -27,8 +27,8 @@ public  class atvsampleTest {
 		//capabilities.setCapability(MobileCapabilityType.PLATFORM, "Windows");
 		capabilities.setCapability("deviceName", "emulator-5554");
 		capabilities.setCapability("platformName", "Android");
-		capabilities.setCapability("appPackage","tv.airtel.visionsample");
-		capabilities.setCapability("appActivity",".activity.SplashActivity");
+		capabilities.setCapability("appPackage","tv.accedo.airtel.wynk.debug");
+		capabilities.setCapability("appActivity","tv.accedo.airtel.wynk.presentation.view.activity.SplashActivity");
 		capabilities.setCapability("autoGrantPermissions","true");
 
 		return capabilities;
@@ -62,19 +62,21 @@ public  class atvsampleTest {
 
 		String s1=new Util.python1().python();
 		new Util.python().script(s1,1);
-		dr.findElement(By.xpath(("//android.support.v7.widget.RecyclerView[1]/android.widget.LinearLayout[1]" +
-				"/android.widget.FrameLayout/android.widget.ImageView"))).click();
-		System.out.println("switched to player page");
-		Thread.sleep(10000);
 
-		dr.findElement(By.id("tv.airtel.visionsample:id/iv_play")).click();
-		System.out.println("playing");
 
-		for(int i=0;i<3;i++) {
-			String s2=new Util.python1().python();
-			new Util.python().script(s2,i+2);
-			Thread.sleep(2000);
-		}
+//		dr.findElement(By.xpath(("//android.support.v7.widget.RecyclerView[1]/android.widget.LinearLayout[1]" +
+//				"/android.widget.FrameLayout/android.widget.ImageView"))).click();
+//		System.out.println("switched to player page");
+//		Thread.sleep(10000);
+//
+//		dr.findElement(By.id("tv.airtel.visionsample:id/iv_play")).click();
+//		System.out.println("playing");
+//
+//		for(int i=0;i<3;i++) {
+//			String s2=new Util.python1().python();
+//			new Util.python().script(s2,i+2);
+//			Thread.sleep(2000);
+//		}
 
 		//dr.navigate().back();		
 	}
