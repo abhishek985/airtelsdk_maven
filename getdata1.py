@@ -8,7 +8,7 @@ cmp = "tv.airtel.visionsample/.activity.MainActivity"
 pname = "tv.airtel.visionsample"
 device_id = "emulator-5554"
 
-
+print "Just to check git Test"
 # Check IF Android Device is connected
 def check_device(args):
     try:
