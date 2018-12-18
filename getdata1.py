@@ -1,4 +1,4 @@
-import re,sys, os
+import re, sys, os
 import subprocess
 import json
 
@@ -10,12 +10,12 @@ class GetData:
         Windows will see \r\n instead of \n, old devices do the same, old devices
         on Windows will see \r\r\n.
         """
-    # rstrip is used here to workaround a difference between splineslines and
-    # re.split:
-    # >>> 'foo\n'.splitlines()
-    # ['foo']
-    # >>> re.split(r'\n', 'foo\n')
-    # ['foo', '']
+        # rstrip is used here to workaround a difference between splineslines and
+        # re.split:
+        # >>> 'foo\n'.splitlines()
+        # ['foo']
+        # >>> re.split(r'\n', 'foo\n')
+        # ['foo', '']
         return re.split(r'[\r\n]+', s.rstrip())
 
     def get_devices(self, adb_path='adb'):
@@ -93,7 +93,20 @@ class GetData:
         jenky_frames_output = os.popen("adb shell dumpsys gfxinfo")
         for count, line in enumerate(jenky_frames_output.readlines()):
             if 'Janky frame' in line:
-                return line.split()[-2]
+                return str(line.split()[-2])
 
+    def getbatterystats(self):
+        try:
+            out = os.popen("adb shell dumpsys batterystats")
+            return out.readlines()[0]
+        except OSError:
+            return "Unable to fetch Battery Stats"
 
+    def getcurrentevent(self):
+        try:
+            out = os.popen("adb logcat -d| grep cmp | tail -1")
+            s = out.readlines()[0]
+            return s[s.find("{")+1:s.find("}")]
 
+        except OSError:
+            return "Unable to fetch current event"
