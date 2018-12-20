@@ -104,9 +104,15 @@ class GetData:
 
     def getcurrentevent(self):
         try:
-            out = os.popen("adb logcat -d| grep cmp | tail -1")
-            s = out.readlines()[0]
-            return s[s.find("{")+1:s.find("}")]
+            command = 'adb logcat -d| grep cmp | tail -1'
+            p = subprocess.Popen(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            s = p.communicate()[0]
+            if s:
+                return str(s[s.find("{")+1:s.find("}")])
 
         except OSError:
             return "Unable to fetch current event"
+
+
+print GetData().getcurrentevent()
